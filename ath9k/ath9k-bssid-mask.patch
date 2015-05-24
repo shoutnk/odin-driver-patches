@@ -1,16 +1,21 @@
-Index: compat-wireless-2011-12-01/drivers/net/wireless/ath/ath9k/debug.c
-===================================================================
---- compat-wireless-2011-12-01.orig/drivers/net/wireless/ath/ath9k/debug.c	2012-04-23 18:11:21.162143383 +0200
-+++ compat-wireless-2011-12-01/drivers/net/wireless/ath/ath9k/debug.c	2012-04-23 18:11:36.350264265 +0200
-@@ -1112,6 +1112,53 @@
- 	.llseek = default_llseek,
- };
+--- debug.c.orig	2015-05-24 19:38:07.040751082 +0900
++++ debug.c	2015-05-24 19:38:27.764751380 +0900
+@@ -27,6 +27,57 @@
+ #define REG_READ_D(_ah, _reg) \
+ 	ath9k_hw_common(_ah)->ops->read((_ah), (_reg))
  
++#define CONFIG_ATH_DEBUG 1
++static int ath9k_debugfs_open(struct inode *inode, struct file *file)
++{
++    file->private_data = inode->i_private;
++    return 0;
++}
++
 +static ssize_t read_file_bssid_extra(struct file *file, char __user *user_buf,
 +                                size_t count, loff_t *ppos)
 +{
 +	struct ath_softc *sc = file->private_data;
-+  struct ath_common *common = ath9k_hw_common(sc->sc_ah);
++    struct ath_common *common = ath9k_hw_common(sc->sc_ah);
 +	char buf[32];
 +	unsigned int len;
 +
@@ -22,25 +27,25 @@ Index: compat-wireless-2011-12-01/drivers/net/wireless/ath/ath9k/debug.c
 +			     size_t count, loff_t *ppos)
 +{
 +	struct ath_softc *sc = file->private_data;
-+  struct ath_hw *ah = sc->sc_ah;
-+  struct ath_common *common = ath9k_hw_common(ah);
-+	char buf[32];
-+  u8 macaddr[ETH_ALEN];
-+	ssize_t len;
++    struct ath_hw *ah = sc->sc_ah;
++    struct ath_common *common = ath9k_hw_common(ah);
++    char buf[32];
++    u8 macaddr[ETH_ALEN];
++    ssize_t len;
 +
-+	len = min(count, sizeof(buf) - 1);
-+	if (copy_from_user(buf, user_buf, len))
-+		return -EFAULT;
++    len = min(count, sizeof(buf) - 1);
++    if (copy_from_user(buf, user_buf, len))
++        return -EFAULT;
 +
-+	buf[len] = '\0';
++    buf[len] = '\0';
 +
-+  sscanf(buf, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &macaddr[0], &macaddr[1],
-+              &macaddr[2], &macaddr[3], &macaddr[4], &macaddr[5]);
++    sscanf(buf, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &macaddr[0], &macaddr[1],
++            &macaddr[2], &macaddr[3], &macaddr[4], &macaddr[5]);
 +
-+  memcpy(common->bssidmask, macaddr, ETH_ALEN);
-+	ath_hw_setbssidmask(common);
++    memcpy(common->bssidmask, macaddr, ETH_ALEN);
++    ath_hw_setbssidmask(common);
 +
-+	return count;
++    return count;
 +}
 +
 +static const struct file_operations fops_bssid_extra = {
@@ -50,14 +55,11 @@ Index: compat-wireless-2011-12-01/drivers/net/wireless/ath/ath9k/debug.c
 +	.owner = THIS_MODULE,
 +	.llseek = default_llseek,
 +};
-+
-+
-+
- static ssize_t read_file_regval(struct file *file, char __user *user_buf,
- 			     size_t count, loff_t *ppos)
- {
-@@ -1764,6 +1811,8 @@
- 			    sc->debug.debugfs_phy, sc, &fops_disable_ani);
+ 
+ static ssize_t ath9k_debugfs_read_buf(struct file *file, char __user *user_buf,
+ 				      size_t count, loff_t *ppos)
+@@ -2065,6 +2116,8 @@
+ 			    &sc->sc_ah->config.enable_paprd);
  	debugfs_create_file("regidx", S_IRUSR | S_IWUSR, sc->debug.debugfs_phy,
  			    sc, &fops_regidx);
 +	debugfs_create_file("bssid_extra", S_IRUSR | S_IWUSR, sc->debug.debugfs_phy,
